@@ -1,0 +1,66 @@
+type User @table {
+  email: String!
+  displayName: String!
+  userType: String!
+  createdAt: Timestamp!
+  phoneNumber: String
+  address: String
+}
+
+type ServiceCategory @table {
+  name: String!
+  description: String
+}
+
+type ServiceProviderProfile @table {
+  user: User!
+  description: String!
+  location: String!
+  hourlyRate: Float!
+  createdAt: Timestamp!
+  averageRating: Float
+  qualifications: String
+  businessName: String
+}
+
+type SubscriptionType @table {
+  name: String!
+  price: Float!
+  duration: String!
+  features: String!
+  description: String
+}
+
+type ProviderSubscription @table {
+  serviceProviderProfile: ServiceProviderProfile!
+  subscriptionType: SubscriptionType!
+  startDate: Date!
+  endDate: Date!
+  status: String!
+  createdAt: Timestamp!
+  paymentReference: String
+}
+
+type Booking @table {
+  client: User!
+  serviceProviderProfile: ServiceProviderProfile!
+  serviceCategory: String!
+  bookingDate: Date!
+  startTime: String!
+  endTime: String!
+  status: String!
+  totalPrice: Float!
+  createdAt: Timestamp!
+  clientNotes: String
+  providerNotes: String
+  bayConnectProtectEnabled: Boolean
+}
+
+type Review @table {
+  client: User!
+  serviceProviderProfile: ServiceProviderProfile!
+  booking: Booking!
+  rating: Int!
+  createdAt: Timestamp!
+  comment: String
+}

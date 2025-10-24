@@ -1,0 +1,82 @@
+mutation CreateSeedData @auth(level: PUBLIC, insecureReason: "This operation is for seeding data and does not require authentication") @transaction {
+  user_insertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      displayName: "demouser1",
+      email: "demouser1@example.com",
+      userType: "client",
+      createdAt: "2024-04-26T00:00:00Z"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      displayName: "demouser2",
+      email: "demouser2@example.com",
+      userType: "serviceProvider",
+      createdAt: "2024-04-26T00:00:00Z"
+    }
+  ])
+  serviceProviderProfile_insertMany(data: [
+    {
+      id: "650e8400-e29b-41d4-a716-446655440000",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      description: "Example service provider profile",
+      hourlyRate: 50.0,
+      location: "Example Location",
+      businessName: "Example Business",
+      createdAt: "2024-04-26T00:00:00Z"
+    }
+  ])
+  subscriptionType_insertMany(data: [
+    {
+      id: "750e8400-e29b-41d4-a716-446655440000",
+      name: "Basic",
+      description: "Basic subscription type",
+      price: 10.0,
+      duration: "Monthly",
+      features: "Some basic features"
+    }
+  ])
+  providerSubscription_insertMany(data: [
+    {
+      id: "850e8400-e29b-41d4-a716-446655440000",
+      serviceProviderProfileId: "650e8400-e29b-41d4-a716-446655440000",
+      subscriptionTypeId: "750e8400-e29b-41d4-a716-446655440000",
+      startDate: "2024-04-26",
+      endDate: "2025-04-26",
+      status: "Active",
+      createdAt: "2024-04-26T00:00:00Z"
+    }
+  ])
+  serviceCategory_insertMany(data: [
+    {
+      id: "950e8400-e29b-41d4-a716-446655440000",
+      name: "Cleaning",
+      description: "Cleaning services"
+    }
+  ])
+  booking_insertMany(data: [
+    {
+      id: "a50e8400-e29b-41d4-a716-446655440000",
+      clientId: "550e8400-e29b-41d4-a716-446655440000",
+      serviceProviderProfileId: "650e8400-e29b-41d4-a716-446655440000",
+      bookingDate: "2024-05-01",
+      startTime: "09:00",
+      endTime: "10:00",
+      totalPrice: 50.0,
+      status: "Booked",
+      serviceCategory: "Cleaning",
+      createdAt: "2024-04-26T00:00:00Z"
+    }
+  ])
+  review_insertMany(data: [
+    {
+      id: "b50e8400-e29b-41d4-a716-446655440000",
+      bookingId: "a50e8400-e29b-41d4-a716-446655440000",
+      clientId: "550e8400-e29b-41d4-a716-446655440000",
+      serviceProviderProfileId: "650e8400-e29b-41d4-a716-446655440000",
+      rating: 5,
+      comment: "Great service!",
+      createdAt: "2024-04-26T00:00:00Z"
+    }
+  ])
+}

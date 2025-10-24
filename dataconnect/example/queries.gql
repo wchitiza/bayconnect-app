@@ -1,0 +1,25 @@
+mutation CreateUser($displayName: String!, $email: String!, $userType: String!) @auth(level: USER) {
+  user_insert(data: {displayName: $displayName, email: $email, userType: $userType, createdAt_expr: "request.time"})
+}
+
+query GetServiceProviderProfile @auth(level: USER) {
+  serviceProviderProfile(key: {userId_expr: "auth.uid"}) {
+    id
+    businessName
+    description
+    hourlyRate
+    location
+  }
+}
+
+mutation CreateServiceProviderProfile($businessName: String!, $description: String!, $hourlyRate: Float!, $location: String!) @auth(level: USER) {
+  serviceProviderProfile_insert(data: {userId_expr: "auth.uid", businessName: $businessName, description: $description, hourlyRate: $hourlyRate, location: $location, createdAt_expr: "request.time"})
+}
+
+query ListServiceCategories @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  serviceCategories {
+    id
+    name
+    description
+  }
+}

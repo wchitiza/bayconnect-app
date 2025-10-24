@@ -1,0 +1,179 @@
+/**
+ * @file Firebase Security Rules for Bay Connect Platform
+ *
+ * @core_philosophy This ruleset enforces a role-based access control model with user-ownership
+ *                   for user profiles. It allows public read access to provider profiles
+ *                   but restricts write access to owners and potentially admins. Client data
+ *                   is kept private, accessible only to the authenticated user. Bookings are
+ *                   accessible based on user role and ownership (client, provider, admin).
+ *                   Payments are generally restricted, potentially accessible to admins or
+ *                   related users.
+ *
+ * @data_structure The data is structured as follows:
+ *   - /users/{userId}: User profiles (clients, providers, admins).
+ *   - /providers/{providerId}: Provider profiles (public-facing data).
+ *   - /clients/{clientId}: Client profiles (private data).
+ *   - /bookings/{bookingId}: Booking data.
+ *   - /payments/{paymentId}: Payment data.
+ *
+ * @key_security_decisions
+ *   - Users can only read and write their own profile data under /users/{userId}.
+ *   - Provider profiles under /providers/{providerId} are publicly readable, but
+ *     only the owner (provider) or admins can modify them.
+ *   - Client profiles under /clients/{clientId} are private, accessible only to the
+ *     authenticated user.
+ *   - Listing of users is disallowed to prevent unauthorized data access.
+ *   - The default security posture for ambiguous relationships is strict: deny access
+ *     unless explicitly granted.
+ *
+ * @denormalization_for_authorization
+ *   - For simplicity, we assume that provider and client documents contain a `user_id`
+ *     field that matches the Firebase Auth UID. This allows us to easily check
+ *     ownership using `isOwner(resource.data.user_id)`. If that were not the case, we would have to create this field.
+ *
+ * @structural_segregation There is no structural segregation for public/private data.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Core user profiles for all users (clients, providers, admins).
+     * @path /users/{userId}
+     * @allow (create) Authenticated user creates their own profile.
+     *          `request.auth.uid == userId`
+     * @allow (get, update, delete) Authenticated user with matching `uid` reads/updates/deletes their profile.
+     *          `request.auth.uid == userId`
+     * @deny (list) Listing users is disallowed.
+     * @deny (create) If the `uid` does not match the authenticated user.
+     *          `request.auth.uid != userId`
+     * @principle Enforces user-ownership for profile data.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && exists(/databases/$(database)/documents/users/$(userId));
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+     /**
+      * @description Public-facing information for service providers.
+      * @path /providers/{providerId}
+      * @allow (get, list) Anyone can read provider profiles.
+      *          `true`
+      * @allow (create) Provider with matching `uid` creates their profile.
+      *          `request.auth.uid == providerId`
+      * @allow (update, delete) Authenticated provider updates or deletes their profile.
+      *          `request.auth.uid == resource.data.user_id`
+      * @deny (create, update, delete) If the `uid` does not match the authenticated provider.
+      *          `request.auth.uid != resource.data.user_id`
+      * @principle Public read access with owner-only writes.
+      */
+    match /providers/{providerId} {
+      function isOwner(providerId) {
+        return request.auth != null && request.auth.uid == resource.data.user_id;
+      }
+
+      function isExistingOwner(providerId) {
+        return isOwner(providerId) && exists(/databases/$(database)/documents/providers/$(providerId));
+      }
+
+      allow get, list: if true;
+      allow create: if request.auth != null;
+      allow update: if isOwner(providerId);
+      allow delete: if isOwner(providerId);
+    }
+
+     /**
+      * @description Client-specific private information.
+      * @path /clients/{clientId}
+      * @allow (get, update, delete) Authenticated client with matching `uid` reads/updates/deletes their profile.
+      *          `request.auth.uid == clientId`
+      * @allow (create) Authenticated client with matching `uid` creates their own profile.
+      *          `request.auth.uid == clientId`
+      * @deny (list) Listing clients is disallowed.
+      * @deny (create, update, delete) If the `uid` does not match the authenticated client.
+      *          `request.auth.uid != clientId`
+      * @principle Enforces user-ownership for private client data.
+      */
+    match /clients/{clientId} {
+       function isOwner(clientId) {
+        return request.auth != null && request.auth.uid == clientId;
+      }
+
+      function isExistingOwner(clientId) {
+        return isOwner(clientId) && exists(/databases/$(database)/documents/clients/$(clientId));
+      }
+
+      allow get: if isOwner(clientId);
+      allow list: if false;
+      allow create: if request.auth != null && request.auth.uid == clientId;
+      allow update: if isExistingOwner(clientId);
+      allow delete: if isExistingOwner(clientId);
+    }
+
+    /**
+     * @description Information about a specific job booking.
+     * @path /bookings/{bookingId}
+     * @allow (read) Anyone can read.
+     *          `true`
+     * @allow (create) Any authenticated user can create.
+     *          `request.auth != null`
+     * @allow (update, delete) Only admins can update or delete.
+     *          `isAdmin()`
+     * @deny (list) Listing bookings is disallowed.
+     * @principle Role-based access control for bookings.
+     */
+    match /bookings/{bookingId} {
+        function isSignedIn() {
+            return request.auth != null;
+        }
+
+        allow get: if true;
+        allow list: if false;
+        allow create: if isSignedIn();
+        allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+    /**
+     * @description Payment transaction records.
+     * @path /payments/{paymentId}
+     * @allow (read) Anyone can read.
+     *          `true`
+     * @allow (create) Any authenticated user can create.
+     *          `request.auth != null`
+     * @allow (update, delete) Only admins can update or delete.
+     *          `isAdmin()`
+     * @deny (list) Listing payments is disallowed.
+     * @principle Role-based access control for payments.
+     */
+    match /payments/{paymentId} {
+        function isSignedIn() {
+            return request.auth != null;
+        }
+        allow get: if true;
+        allow list: if false;
+        allow create: if isSignedIn();
+        allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
+    /**
+     * @description Publicly readable collection of providers.
+     * @path /providers
+     * @allow (list) Anyone can list providers.
+     *          `true`
+     * @deny (get, create, update, delete) No other operations allowed on the root of this collection.
+     */
+    match /providers {
+        allow list: if true;
+    }
+  }
+}

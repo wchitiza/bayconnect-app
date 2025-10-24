@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bay Connect - Find Local Pros You Can Trust</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
+    
+    <!-- WhatsApp Floating Widget -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+      * { box-sizing: border-box; }
+      body { 
+        font-family: Arial, sans-serif; 
+        margin: 0; 
+        padding: 0; 
+        background: #f5f5f5;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        flex: 1;
+      }
+      
+      /* Header Styles */
+      .header {
+        background: #007bff;
+        color: white;
+        padding: 15px 0;
+      }
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 24px;
+        font-weight: bold;
+        text-decoration: none;
+        color: white;
+      }
+      .logo-svg {
+        width: 40px;
+        height: 40px;
+      }
+      .logo-text {
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .nav-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      
+      /* Main Content Styles */
+      .hero {
+        background: white;
+        padding: 60px 20px;
+        text-align: center;
+        margin: 20px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .button {
+        background: #007bff;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 5px;
+        font-size: 14px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .button:hover { background: #0056b3; }
+      .button.secondary { background: #6c757d; }
+      .button.secondary:hover { background: #545b62; }
+      .button.success { background: #28a745; }
+      .button.success:hover { background: #1e7e34; }
+      .button.danger { background: #dc3545; }
+      .button.danger:hover { background: #c82333; }
+      
+      .section {
+        background: white;
+        padding: 25px;
+        margin: 20px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .message {
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 5px;
+        display: none;
+      }
+      .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+      .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+      .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+      .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+      
+      .form-group { margin: 15px 0; }
+      .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+      .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .form-group textarea { height: 100px; resize: vertical; }
+      
+      /* Footer Styles */
+      .footer {
+        background: #2c3e50;
+        color: white;
+        padding: 40px 0 20px;
+        margin-top: auto;
+      }
+      .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 30px;
+      }
+      .footer-section h3 {
+        color: #007bff;
+        margin-bottom: 20px;
+        font-size: 18px;
+      }
+      .footer-section p, .footer-section a {
+        color: #bdc3c7;
+        line-height: 1.6;
+        text-decoration: none;
+      }
+      .footer-section a:hover {
+        color: #007bff;
+      }
+      .contact-info {
+        list-style: none;
+        padding: 0;
+      }
+      .contact-info li {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .footer-bottom {
+        text-align: center;
+        padding-top: 20px;
+        margin-top: 20px;
+        border-top: 1px solid #34495e;
+        color: #95a5a6;
+        font-size: 14px;
+      }
+      
+      /* WhatsApp Floating Widget */
+      .whatsapp-widget {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+      }
+      .whatsapp-button {
+        background: #25D366;
+        color: white;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+      .whatsapp-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 25px rgba(37, 211, 102, 0.5);
+      }
+      .whatsapp-tooltip {
+        position: absolute;
+        right: 70px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #2c3e50;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      .whatsapp-button:hover + .whatsapp-tooltip {
+        opacity: 1;
+      }
+      
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        overflow-y: auto;
+      }
+      .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 500px;
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 1001;
+      }
+      
+      /* Progress Bar */
+      .progress-bar {
+        display: flex;
+        margin-bottom: 30px;
+        justify-content: space-between;
+        position: relative;
+      }
+      .progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #ddd;
+        z-index: 1;
+      }
+      .progress-step {
+        text-align: center;
+        z-index: 2;
+        background: white;
+        padding: 0 10px;
+      }
+      .step-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #ddd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 5px;
+        font-weight: bold;
+      }
+      .step-number.active {
+        background: #007bff;
+      }
+      .step-label {
+        font-size: 12px;
+        color: #666;
+      }
+      
+      /* Form Steps */
+      .form-step {
+        display: none;
+      }
+      .form-step.active {
+        display: block;
+      }
+      
+      .form-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+        gap: 10px;
+      }
+      .form-actions .button {
+        flex: 1;
+      }
+      
+      .upload-area {
+        border: 2px dashed #ddd;
+        padding: 20px;
+        text-align: center;
+        border-radius: 8px;
+        margin: 10px 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .upload-area:hover {
+        border-color: #007bff;
+        background: #f8f9fa;
+      }
+      .upload-area small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+      }
+      
+      .benefits-list {
+        list-style: none;
+        padding: 0;
+      }
+      .benefits-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .benefits-list li:before {
+        content: '✓ ';
+        color: #28a745;
+        font-weight: bold;
+      }
+      
+      .hidden { display: none; }
+
+      /* Auth Modal */
+      .auth-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+      }
+      .auth-content {
+        background: white;
+        margin: 10% auto;
+        padding: 30px;
+        border-radius: 8px;
+        max-width: 400px;
+        position: relative;
+      }
+
+      /* Setup Notice */
+      .setup-notice {
+        background: #17a2b8;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        font-size: 14px;
+        border-bottom: 1px solid #138496;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Setup Notice -->
+    <div class="setup-notice">
+      <strong>Bay Connect</strong> - Connecting trusted service providers with customers across South Africa
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-content">
+        <a href="#" class="logo" onclick="showHome(); return false;">
+          <svg class="logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" rx="20" fill="#007bff"/>
+            <path d="M30 40L40 50L30 60" stroke="white" stroke-width="6" stroke-linecap="round"/>
+            <path d="M70 40L60 50L70 60" stroke="white" stroke-width="6" stroke-linecap="round"/>
+            <path d="M45 65C45 65 50 55 55 65" stroke="white" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="50" cy="35" r="5" fill="white"/>
+          </svg>
+          <span class="logo-text">Bay Connect</span>
+        </a>
+        <div class="nav-buttons">
+          <button class="button secondary" onclick="showHome()">Home</button>
+          <button class="button secondary" onclick="loadOpenJobs(); showHome();">Find Jobs</button>
+          <button class="button secondary" onclick="startProviderOnboarding()">Become Provider</button>
+          <button class="button secondary" onclick="showServiceRequest()">Request Service</button>
+          <button class="button" onclick="showAdminLogin()">Admin Portal</button>
+          <button class="button secondary" id="authButton" onclick="showAuthModal()">Sign In</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Home Section -->
+      <div id="homeSection">
+        <div class="hero">
+          <h2>Verified Painters, Plumbers, Tutors & More</h2>
+          <p>Across all 9 provinces of South Africa</p>
+          <div>
+            <button class="button" onclick="loadOpenJobs(); showHome();">Find Services</button>
+            <button class="button success" onclick="startProviderOnboarding()">Become a Provider</button>
+            <button class="button secondary" onclick="showServiceRequest()">Request a Service</button>
+          </div>
+        </div>
+
+        <!-- Open Jobs for Visitors -->
+        <div id="openJobsSection" class="section">
+          <h3>Open Service Requests</h3>
+          <div id="openJobsList">
+            <p>Loading open service requests...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Service Request Section -->
+      <div id="serviceRequestSection" class="section hidden">
+        <h3>Request a Service</h3>
+        <div class="form-group">
+          <label>Service Needed</label>
+          <select id="serviceType">
+            <option value="">Select a service</option>
+            <option value="painting">Painting</option>
+            <option value="plumbing">Plumbing</option>
+            <option value="electrical">Electrical</option>
+            <option value="tutoring">Tutoring</option>
+            <option value="cleaning">Cleaning</option>
+            <option value="gardening">Gardening</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="serviceDescription" placeholder="Describe what you need..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="serviceLocation" placeholder="Your location">
+        </div>
+        <div class="form-group">
+          <label>Your Budget (ZAR)</label>
+          <input type="number" id="serviceBudget" placeholder="Estimated budget">
+        </div>
+        <button class="button success" onclick="submitServiceRequest()">Submit Request</button>
+        <div id="serviceRequestMessage" class="message"></div>
+      </div>
+
+      <!-- Provider Onboarding Modal -->
+      <div id="providerModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeProviderModal()">&times;</span>
+          
+          <!-- Progress Bar -->
+          <div class="progress-bar">
+            <div class="progress-step">
+              <div class="step-number active" id="step1Number">1</div>
+              <div class="step-label">Account</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-number" id="step2Number">2</div>
+              <div class="step-label">Service</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-number" id="step3Number">3</div>
+              <div class="step-label">Documents</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-number" id="step4Number">4</div>
+              <div class="step-label">Payment</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-number" id="step5Number">5</div>
+              <div class="step-label">Complete</div>
+            </div>
+          </div>
+
+          <!-- Step 1: Basic Info -->
+          <div id="step1" class="form-step active">
+            <h3>Create Your Provider Account</h3>
+            <p>Let's get you started as a verified service provider.</p>
+            
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" id="providerName" placeholder="Your full name" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Email Address *</label>
+              <input type="email" id="providerEmail" placeholder="your.email@example.com" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Password *</label>
+              <input type="password" id="providerPassword" placeholder="Create a secure password" required>
+            </div>
+            
+            <div class="form-actions">
+              <button class="button secondary" onclick="closeProviderModal()">Cancel</button>
+              <button class="button success" onclick="validateStep1()">Next →</button>
+            </div>
+          </div>
+
+          <!-- Step 2: Service Details -->
+          <div id="step2" class="form-step">
+            <h3>Service Information</h3>
+            <p>Tell us about your business.</p>
+            
+            <div class="form-group">
+              <label>Phone Number *</label>
+              <input type="tel" id="providerPhone" placeholder="071 234 5678" required>
+            </div>
+            
+            <div class="form-group">
+              <label>What service do you provide? *</label>
+              <select id="providerService" required>
+                <option value="">Select your main service</option>
+                <option value="painting">Painting & Decorating</option>
+                <option value="plumbing">Plumbing</option>
+                <option value="electrical">Electrical</option>
+                <option value="tutoring">Tutoring</option>
+                <option value="cleaning">Cleaning</option>
+                <option value="gardening">Gardening & Landscaping</option>
+                <option value="carpentry">Carpentry</option>
+                <option value="building">Building & Construction</option>
+                <option value="other">Other Service</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>Business Description</label>
+              <textarea id="providerDescription" placeholder="Briefly describe your business and experience..."></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button class="button secondary" onclick="showStep(1)">← Back</button>
+              <button class="button success" onclick="validateStep2()">Next →</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Document Upload -->
+          <div id="step3" class="form-step">
+            <h3>Upload Your Documents</h3>
+            <p>We need these documents to verify your business.</p>
+            
+            <div class="form-group">
+              <label>ID Document *</label>
+              <div class="upload-area" onclick="document.getElementById('idDocument').click()">
+                <p><strong>ID/Passport/Drivers License</strong></p>
+                <small>Upload a clear photo of your ID document</small>
+                <input type="file" id="idDocument" accept=".pdf,.jpg,.jpeg,.png" style="display: none">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Proof of Address *</label>
+              <div class="upload-area" onclick="document.getElementById('proofOfAddress').click()">
+                <p><strong>Utility Bill or Bank Statement</strong></p>
+                <small>Not older than 3 months</small>
+                <input type="file" id="proofOfAddress" accept=".pdf,.jpg,.jpeg,.png" style="display: none">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Business Documents (Optional)</label>
+              <div class="upload-area" onclick="document.getElementById('businessDocs').click()">
+                <p><strong>Company Registration or Trade Certificate</strong></p>
+                <small>If you have a registered business</small>
+                <input type="file" id="businessDocs" accept=".pdf,.jpg,.jpeg,.png" style="display: none">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="button secondary" onclick="showStep(2)">← Back</button>
+              <button class="button success" onclick="validateStep3()">Save & Continue →</button>
+            </div>
+          </div>
+
+          <!-- Step 4: Payment -->
+          <div id="step4" class="form-step">
+            <h3>Almost Done! Subscribe Now</h3>
+            <p>Join thousands of trusted providers across South Africa.</p>
+            
+            <div class="card" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="margin-top: 0; color: #007bff;">Provider Subscription - R87/month</h4>
+              <ul class="benefits-list">
+                <li>Verified provider badge</li>
+                <li>Priority listing in search results</li>
+                <li>Direct access to customer leads</li>
+                <li>Professional business profile</li>
+                <li>Customer reviews & ratings</li>
+                <li>Support across all 9 provinces</li>
+                <li>Monthly performance reports</li>
+                <li>24/7 customer support</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <button class="button success" onclick="startPayment()" style="padding: 15px 30px; font-size: 16px;">
+                💳 Subscribe Now - R87/month
+              </button>
+              <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                Or use: <a href="https://paystack.shop/pay/ywuy-g-40h" target="_blank">https://paystack.shop/pay/ywuy-g-40h</a>
+              </p>
+            </div>
+
+            <div class="form-actions">
+              <button class="button secondary" onclick="showStep(3)">← Back</button>
+              <button class="button" onclick="skipPaymentForNow()">Skip for Now</button>
+            </div>
+          </div>
+
+          <!-- Step 5: Verification -->
+          <div id="step5" class="form-step">
+            <h3>Verify Your Payment</h3>
+            <p>Enter your Paystack reference to complete verification.</p>
+            
+            <div class="form-group">
+              <label>Paystack Reference Number *</label>
+              <input type="text" id="paymentReference" placeholder="PAYSTACK-REFERENCE-123" style="text-align: center; font-size: 16px;">
+              <small>You'll receive this via email after payment</small>
+            </div>
+
+            <div style="text-align: center; margin: 20px 0;">
+              <button class="button success" onclick="verifyPayment()" style="padding: 15px 30px; font-size: 16px;">
+                ✅ Complete Verification
+              </button>
+            </div>
+
+            <div class="form-actions">
+              <button class="button secondary" onclick="showStep(4)">← Back</button>
+              <button class="button" onclick="closeProviderModal()">Finish Later</button>
+            </div>
+          </div>
+
+          <div id="providerMessage" class="message"></div>
+        </div>
+      </div>
+
+      <!-- Auth Modal -->
+      <div id="authModal" class="auth-modal">
+        <div class="auth-content">
+          <span class="close" onclick="closeAuthModal()">&times;</span>
+          <h3>Sign In</h3>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="authEmail" placeholder="your.email@example.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="authPassword" placeholder="Enter your password">
+          </div>
+          <button class="button success" onclick="signIn()" style="width: 100%;">Sign In</button>
+          <p style="text-align: center; margin-top: 15px;">
+            <a href="#" onclick="showSignUp()">Don't have an account? Sign up</a>
+          </p>
+          <div id="authMessage" class="message"></div>
+        </div>
+      </div>
+
+      <!-- Admin Login -->
+      <div id="adminLoginSection" class="section login-form hidden">
+        <h3>Admin Portal Login</h3>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="adminEmail" value="wchitiza@gmail.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="adminPassword" placeholder="Enter admin password">
+        </div>
+        <button class="button" onclick="adminLogin()">Login as Admin</button>
+        <div id="adminLoginMessage" class="message"></div>
+      </div>
+
+      <!-- Messages -->
+      <div id="globalMessage" class="message"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>About Bay Connect</h3>
+          <p>Connecting trusted service providers with customers across South Africa. Find verified professionals for all your home improvement and service needs.</p>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Contact Information</h3>
+          <ul class="contact-info">
+            <li><i class="fas fa-envelope"></i> <a href="mailto:info@bayhomeimprovements.co.za">info@bayhomeimprovements.co.za</a></li>
+            <li><i class="fas fa-phone"></i> <a href="tel:+27731142769">073 114 2769</a></li>
+            <li><i class="fas fa-map-marker-alt"></i> 17 High Street, Mount Pleasant<br>Port Elizabeth, South Africa</li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <p><a href="#" onclick="showHome()">Home</a></p>
+          <p><a href="#" onclick="loadOpenJobs(); showHome();">Find Services</a></p>
+          <p><a href="#" onclick="startProviderOnboarding()">Become a Provider</a></p>
+          <p><a href="#" onclick="showServiceRequest()">Request Service</a></p>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Legal</h3>
+          <p><a href="#" onclick="showTerms()">Terms of Service</a></p>
+          <p><a href="#" onclick="showPrivacy()">Privacy Policy</a></p>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2024 Bay Connect. All rights reserved. | Connecting South Africa, One Service at a Time</p>
+      </div>
+    </div>
+
+    <!-- WhatsApp Floating Widget -->
+    <div class="whatsapp-widget">
+      <a href="https://wa.me/27731142769?text=Hi%20Bay%20Connect%2C%20I%20would%20like%20to%20get%20more%20information%20about%20your%20services" 
+         target="_blank" 
+         class="whatsapp-button">
+        <i class="fab fa-whatsapp"></i>
+      </a>
+      <div class="whatsapp-tooltip">
+        Chat with us on WhatsApp!
+      </div>
+    </div>
+
+    <script>
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCgJJCAjvgj_pqHzHxJoX8Qf2NUQk6U3lo",
+        authDomain: "studio-8248500765-68cfd.firebaseapp.com",
+        projectId: "studio-8248500765-68cfd",
+        storageBucket: "studio-8248500765-68cfd.firebasestorage.app",
+        messagingSenderId: "1041811037551",
+        appId: "1:1041811037551:web:78539e7bf8a7aca9741c9a"
+      };
+
+      // Global variables
+      let currentUser = null;
+      let isAdmin = false;
+      let currentStep = 1;
+      let providerData = {};
+
+      // Initialize the app
+      document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Firebase
+        try {
+          if (firebase.apps.length === 0) {
+            firebase.initializeApp(firebaseConfig);
+          }
+          
+          // Auth state listener
+          firebase.auth().onAuthStateChanged(function(user) {
+            currentUser = user;
+            updateAuthUI();
+            
+            if (user && user.email === 'wchitiza@gmail.com') {
+              isAdmin = true;
+              showGlobalMessage('Welcome back, Admin!', 'success');
+            } else if (user) {
+              showGlobalMessage('Signed in successfully!', 'success');
+            }
+          });
+        } catch (error) {
+          console.log('Firebase initialization error:', error);
+          showGlobalMessage('Firebase configuration error. Please check your configuration.', 'error');
+        }
+        
+        // Show home by default
+        showHome();
+        loadOpenJobs();
+      });
+
+      // Navigation functions
+      function showHome() { 
+        showSection('homeSection'); 
+      }
+      
+      function showServiceRequest() { 
+        showSection('serviceRequestSection'); 
+      }
+
+      function showSection(sectionId) {
+        document.querySelectorAll('.container > div').forEach(div => {
+          div.classList.add('hidden');
+        });
+        document.getElementById(sectionId).classList.remove('hidden');
+      }
+
+      // Legal Pages
+      function showTerms() {
+        alert('Terms of Service:\n\n1. Service providers must maintain professional conduct\n2. Customers agree to fair pricing and timely payments\n3. Bay Connect acts as a platform connector only\n4. Full terms available upon request at info@bayhomeimprovements.co.za');
+      }
+
+      function showPrivacy() {
+        alert('Privacy Policy:\n\n1. We protect your personal information\n2. Data is used only for service matching\n3. We never share your details without consent\n4. Full privacy policy available upon request at info@bayhomeimprovements.co.za');
+      }
+
+      // Auth functions
+      function showAuthModal() {
+        if (currentUser) {
+          firebase.auth().signOut().then(() => {
+            showGlobalMessage('Signed out successfully', 'success');
+          }).catch(error => {
+            showGlobalMessage('Sign out failed: ' + error.message, 'error');
+          });
+        } else {
+          document.getElementById('authModal').style.display = 'block';
+        }
+      }
+
+      function closeAuthModal() {
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('authMessage').style.display = 'none';
+      }
+
+      function signIn() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        
+        if (!email || !password) {
+          showMessage('Please enter both email and password', 'error', 'authMessage');
+          return;
+        }
+
+        firebase.auth().signInWithEmailAndPassword(email, password)
+          .then(() => {
+            showMessage('Signed in successfully!', 'success', 'authMessage');
+            setTimeout(() => {
+              closeAuthModal();
+              showHome();
+            }, 1000);
+          })
+          .catch(error => {
+            console.error('Sign in error:', error);
+            showMessage('Sign in failed: ' + error.message, 'error', 'authMessage');
+          });
+      }
+
+      function showSignUp() {
+        startProviderOnboarding();
+        closeAuthModal();
+      }
+
+      function updateAuthUI() {
+        const authButton = document.getElementById('authButton');
+        if (currentUser) {
+          authButton.textContent = 'Sign Out (' + currentUser.email + ')';
+        } else {
+          authButton.textContent = 'Sign In';
+        }
+      }
+
+      // Provider Onboarding Functions
+      function startProviderOnboarding() {
+        currentStep = 1;
+        providerData = {};
+        document.getElementById('providerModal').style.display = 'block';
+        showStep(1);
+      }
+
+      function closeProviderModal() {
+        document.getElementById('providerModal').style.display = 'none';
+      }
+
+      function showStep(step) {
+        // Update progress bar
+        for (let i = 1; i <= 5; i++) {
+          document.getElementById('step' + i + 'Number').classList.remove('active');
+          document.getElementById('step' + i).classList.remove('active');
+        }
+        
+        document.getElementById('step' + step + 'Number').classList.add('active');
+        document.getElementById('step' + step).classList.add('active');
+        currentStep = step;
+      }
+
+      function validateStep1() {
+        const name = document.getElementById('providerName').value;
+        const email = document.getElementById('providerEmail').value;
+        const password = document.getElementById('providerPassword').value;
+        
+        if (!name || !email || !password) {
+          showProviderMessage('Please fill all required fields.', 'error');
+          return;
+        }
+        
+        if (password.length < 6) {
+          showProviderMessage('Password must be at least 6 characters long.', 'error');
+          return;
+        }
+        
+        providerData.name = name;
+        providerData.email = email;
+        providerData.password = password;
+        
+        showStep(2);
+      }
+
+      function validateStep2() {
+        const phone = document.getElementById('providerPhone').value;
+        const service = document.getElementById('providerService').value;
+        
+        if (!phone || !service) {
+          showProviderMessage('Please fill all required fields.', 'error');
+          return;
+        }
+        
+        providerData.phone = phone;
+        providerData.service = service;
+        providerData.description = document.getElementById('providerDescription').value;
+        
+        showStep(3);
+      }
+
+      function validateStep3() {
+        showProviderMessage('Documents ready! Proceeding to subscription.', 'success');
+        setTimeout(() => {
+          showStep(4);
+        }, 1000);
+      }
+
+      function startPayment() {
+        window.open('https://paystack.shop/pay/ywuy-g-40h', '_blank');
+        showStep(5);
+        showProviderMessage('After payment, enter your reference number above.', 'info');
+      }
+
+      function skipPaymentForNow() {
+        showProviderMessage('You can subscribe later from your profile.', 'info');
+        closeProviderModal();
+      }
+
+      async function verifyPayment() {
+        const reference = document.getElementById('paymentReference').value;
+        if (!reference) {
+          showProviderMessage('Please enter your Paystack reference.', 'error');
+          return;
+        }
+
+        try {
+          showProviderMessage('Verifying payment and creating your account...', 'info');
+          
+          // Create user account
+          const userCredential = await firebase.auth().createUserWithEmailAndPassword(
+            providerData.email, 
+            providerData.password
+          );
+          const user = userCredential.user;
+
+          // Save provider data
+          const db = firebase.firestore();
+          await db.collection('providers').doc(user.uid).set({
+            basicInfo: {
+              name: providerData.name,
+              email: providerData.email,
+              phone: providerData.phone,
+              service: providerData.service,
+              description: providerData.description,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            },
+            verification: {
+              status: 'pending',
+              documentsSubmitted: true,
+              paymentVerified: true,
+              paymentReference: reference
+            },
+            subscription: {
+              status: 'active',
+              plan: 'basic',
+              price: 87,
+              currency: 'ZAR',
+              startedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }
+          });
+
+          showProviderMessage('🎉 Welcome to Bay Connect! Your provider account is now active.', 'success');
+          
+          setTimeout(() => {
+            closeProviderModal();
+            showHome();
+          }, 3000);
+
+        } catch (error) {
+          console.error('Error:', error);
+          showProviderMessage('Error: ' + error.message, 'error');
+        }
+      }
+
+      // Service Request Functions
+      function submitServiceRequest() {
+        const serviceType = document.getElementById('serviceType').value;
+        const description = document.getElementById('serviceDescription').value;
+        const location = document.getElementById('serviceLocation').value;
+        const budget = document.getElementById('serviceBudget').value;
+        
+        if (!serviceType || !description || !location) {
+          showMessage('Please fill all required fields.', 'error', 'serviceRequestMessage');
+          return;
+        }
+
+        const db = firebase.firestore();
+        db.collection('serviceRequests').add({
+          serviceType: serviceType,
+          description: description,
+          location: location,
+          budget: budget,
+          status: 'open',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          createdBy: currentUser ? currentUser.uid : 'anonymous'
+        })
+        .then(() => {
+          showMessage('Service request submitted successfully!', 'success', 'serviceRequestMessage');
+          // Clear form
+          document.getElementById('serviceType').value = '';
+          document.getElementById('serviceDescription').value = '';
+          document.getElementById('serviceLocation').value = '';
+          document.getElementById('serviceBudget').value = '';
+          loadOpenJobs();
+        })
+        .catch(error => {
+          showMessage('Error submitting request: ' + error.message, 'error', 'serviceRequestMessage');
+        });
+      }
+
+      function loadOpenJobs() {
+        const db = firebase.firestore();
+        db.collection('serviceRequests')
+          .where('status', '==', 'open')
+          .orderBy('createdAt', 'desc')
+          .limit(10)
+          .get()
+          .then(snapshot => {
+            const jobsList = document.getElementById('openJobsList');
+            if (snapshot.empty) {
+              jobsList.innerHTML = '<p>No open service requests at the moment.</p>';
+              return;
+            }
+            
+            let html = '';
+            snapshot.forEach(doc => {
+              const job = doc.data();
+              html += `
+                <div class="section" style="margin: 10px 0; padding: 15px;">
+                  <h4 style="margin-top: 0; color: #007bff;">${job.serviceType}</h4>
+                  <p>${job.description}</p>
+                  <p><strong>Location:</strong> ${job.location}</p>
+                  ${job.budget ? `<p><strong>Budget:</strong> R${job.budget}</p>` : ''}
+                  <small>Posted: ${job.createdAt?.toDate?.().toLocaleDateString() || 'Recently'}</small>
+                </div>
+              `;
+            });
+            jobsList.innerHTML = html;
+          })
+          .catch(error => {
+            console.error('Error loading jobs:', error);
+            document.getElementById('openJobsList').innerHTML = '<p>Error loading service requests. Please check Firebase configuration.</p>';
+          });
+      }
+
+      // Admin functions
+      function showAdminLogin() {
+        showSection('adminLoginSection');
+      }
+
+      function adminLogin() {
+        const email = document.getElementById('adminEmail').value;
+        const password = document.getElementById('adminPassword').value;
+        
+        if (!email || !password) {
+          showMessage('Please enter both email and password', 'error', 'adminLoginMessage');
+          return;
+        }
+
+        firebase.auth().signInWithEmailAndPassword(email, password)
+          .then(() => {
+            showMessage('Admin login successful! Redirecting...', 'success', 'adminLoginMessage');
+            setTimeout(() => {
+              showHome();
+            }, 1000);
+          })
+          .catch(error => {
+            showMessage('Login failed: ' + error.message, 'error', 'adminLoginMessage');
+          });
+      }
+
+      // Utility functions
+      function showProviderMessage(text, type) {
+        showMessage(text, type, 'providerMessage');
+      }
+
+      function showGlobalMessage(text, type) {
+        showMessage(text, type, 'globalMessage');
+      }
+
+      function showMessage(text, type, elementId) {
+        const messageDiv = document.getElementById(elementId);
+        messageDiv.textContent = text;
+        messageDiv.className = 'message ' + type;
+        messageDiv.style.display = 'block';
+        
+        // Auto-hide success messages after 5 seconds
+        if (type === 'success') {
+          setTimeout(() => {
+            messageDiv.style.display = 'none';
+          }, 5000);
+        }
+      }
+    </script>
+  </body>
+</html>
